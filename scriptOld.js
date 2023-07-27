@@ -171,13 +171,21 @@ function rectDraw2d(px, py, sx, sy, stroke = true) {
 function BGDraw(worldID) {
   const px = GAME.bits;
   ctx.fillStyle = "black";
-  /* Currently draws collision, should be only enabled when in debug*/
-  for (let x = 0; x < Universe.worlds[worldID].coll.length; x++) {
-    let curTilePos = G2P(x, Universe.getWorld(worldID).size[0]);
-    let curTile = Universe.getColl(worldID, curTilePos);
-    if (curTile === 1)
-      rectDraw2d(curTilePos.x * px, curTilePos.y * px, px, px);
+  if (false) { // If Debug Enabled
+    for (let x = 0; x < Universe.worlds[worldID].coll.length; x++) {
+      let curTilePos = G2P(x, Universe.getWorld(worldID).size[0]);
+      let curTile = Universe.getColl(worldID, curTilePos);
+      if (curTile === 1)
+        rectDraw2d(curTilePos.x * px, curTilePos.y * px, px, px);
+    }
+  } else { // Normal draw (Very Good)
+    const img = Universe.worlds[2].bg;
+    imageDrawSmp(img, 0, 0);
   }
+}
+
+function imageDrawSmp(img, px, py) {
+  ctx.drawImage(img, (px - Cam.x) * Cam.z, (py - Cam.y) * Cam.z, img.width * Cam.z, img.height * Cam.z);
 }
 
 function imageDrawAdv(img, px, py, sx, sy, s) {

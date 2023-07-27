@@ -2,12 +2,6 @@ const Attacks = {
 
 };
 
-function toImage(link) {
-  const img = new Image();
-  img.src = link;
-  return img;
-}
-
 const Characters = {
   guppy: {
     sheets: {

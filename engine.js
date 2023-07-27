@@ -17,6 +17,12 @@ function keyEvent(key, down = true) {
 	Keys[key.code] = down;
 }
 
+function toImage(link) {
+  const img = new Image();
+  img.src = link;
+  return img;
+}
+
 var Cam = { x: 0, y: 0, z: 5 };
 const exampleImage = new Image();
 exampleImage.src = "gd1.png";

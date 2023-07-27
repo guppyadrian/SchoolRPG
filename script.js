@@ -13,9 +13,9 @@ var inputDisabled = false;
 /* Object containing data about the world and its levels */
 
 class Character {
-  constructor(name, pos = {x: 0, y: 0, r: 0}) {
+  constructor(name, pos = {x: 0, y: 0, r: 0}, world = 1) {
     this.name = name;
-    this.trans = { pos: pos, world: 1, grid: {x: 0, y: 0} };
+    this.trans = { pos: pos, world: world, grid: {x: 0, y: 0} };
     this.walkSpeed = 1;
     this.sprintSpeed = 2;
     this.sprinting = false;
@@ -30,7 +30,6 @@ class Character {
     const y2 = Math.floor(pos.y / GAME.bits) + 1;
 
     var colls = [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}, {x: x1, y: y2}];
-    console.log(colls);
     for (const pos of colls) {
       if (Universe.getColl(this.trans.world, pos) === 1) {
         return true;
@@ -64,7 +63,7 @@ class Character {
     // silly idles!!
     if (this.idleTime >= 1000 && Math.random() > 0.998) {
       this.setAnim("idle1", true, 1);
-      this.idleTime = 0;
+      this.idleTime = 3;
     }
 
     // tick up counter + if idle do idle anim
@@ -107,12 +106,12 @@ class Character {
 }
 
 class PlayableCharacter extends Character {
-  constructor(name, pos) {
-    super(name, pos);
+  constructor(name, pos, world) {
+    super(name, pos, world);
   }
 }
 
-const MainPlayer = new PlayableCharacter("colten", {x: 64, y: 64, r: 0});
+const MainPlayer = new PlayableCharacter("colten", {x: 224, y: 224, r: 0}, 2);
 MainPlayer.setAnim("idle");
 
 function WorldTick() {
@@ -158,13 +157,23 @@ function rectDraw2d(px, py, sx, sy, stroke = true) {
 function BGDraw(worldID) {
   const px = GAME.bits;
   ctx.fillStyle = "black";
-  /* Currently draws collision, should be only enabled when in debug*/
-  for (let x = 0; x < Universe.worlds[worldID].coll.length; x++) {
-    let curTilePos = G2P(x, Universe.getWorld(worldID).size[0]);
-    let curTile = Universe.getColl(worldID, curTilePos);
-    if (curTile === 1)
-      rectDraw2d(curTilePos.x * px, curTilePos.y * px, px, px);
+  
+  if (false) { // Debug mode (should be false)
+    for (let x = 0; x < Universe.worlds[worldID].coll.length; x++) {
+      let curTilePos = G2P(x, Universe.getWorld(worldID).size[0]);
+      let curTile = Universe.getColl(worldID, curTilePos);
+      if (curTile === 1)
+        rectDraw2d(curTilePos.x * px, curTilePos.y * px, px, px);
+    }
+  } else { 
+    const img = Universe.getWorld(worldID).bg;
+    console.log(worldID)
+    imageDrawSmp(img, 0, 0, img.width, img.height);
   }
+}
+
+function imageDrawSmp(img, px, py, wx, wy) {
+  ctx.drawImage(img, (px - Cam.x) * Cam.z, (py - Cam.y) * Cam.z, wx * Cam.z, wy * Cam.z);
 }
 
 function imageDrawAdv(img, px, py, sx, sy, s) {
