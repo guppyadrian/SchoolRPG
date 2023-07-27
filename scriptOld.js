@@ -12,65 +12,46 @@ var inputDisabled = false;
 
 /* Object containing data about the world and its levels */
 
+
+
 class Character {
   constructor(name, pos = {x: 0, y: 0, r: 0}) {
     this.name = name;
-    this.trans = { pos: pos, world: 1, grid: {x: 0, y: 0} };
-    this.walkSpeed = 1;
-    this.sprintSpeed = 2;
+    this.trans = { pos: pos, world: 1 };
+    this.walkInfo = { frame: 0, prev: { x: 0, y: 0 }, endAnim: false };
+    this.walkSpeed = 25;
+    this.sprintSpeed = 15;
+    this.idleTime = 0; // Timer for Silly Idle Animations 1!1!!
     this.sprinting = false;
-    this.idleTime = 0;
     this.anim = {frame: 0, cur: "none", iFrame: 0, loop: -1};
   }
 
-  collision(pos) {
-    const x1 = Math.floor(pos.x / GAME.bits);
-    const y1 = Math.floor(pos.y / GAME.bits);
-    const x2 = Math.floor(pos.x / GAME.bits) + 1;
-    const y2 = Math.floor(pos.y / GAME.bits) + 1;
-
-    var colls = [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}, {x: x1, y: y2}];
-    console.log(colls);
-    for (const pos of colls) {
-      if (Universe.getColl(this.trans.world, pos) === 1) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   move({ x = 0, y = 0, sprint = false }) {
-    if (this.collision({x: this.trans.pos.x + x, y: this.trans.pos.y + y})) {
-      return false;
+    if (
+    	Universe.getColl(
+			this.trans.world, 
+			{ x: this.trans.pos.x + x, y: this.trans.pos.y + y }
+		) === 1) {
+      console.log("collision!");
+      return;
     }
-    this.trans.pos.x += x;
-    this.trans.pos.y += y;
-
-    this.sprinting = sprint;
-    if (sprint)
-      this.setAnim("runD", false);
-    else
-      this.setAnim("walkD", false);
-    this.idleTime = 0;
-    this.updateGrid();
+	if (this.walkInfo.frame !== 0) return;
+	this.walkInfo.prev = { ...this.trans.pos };
+  this.trans.pos.x += x;
+  this.trans.pos.y += y;
+	this.walkInfo.frame = 1;
+  this.walkInfo.endAnim = false;
+  this.idleTime = 0;
+  this.sprinting = sprint;
+  if (sprint)
+    this.setAnim("runD", false);
+  else
+    this.setAnim("walkD", false);
   }
 
-  updateGrid() {
-    this.trans.grid = {x: Math.floor(this.trans.pos.x / GAME.bits), y: Math.floor(this.trans.pos.y / GAME.bits)};
-  }
-
-  tick() {
-
-    // silly idles!!
-    if (this.idleTime >= 1000 && Math.random() > 0.998) {
-      this.setAnim("idle1", true, 1);
-      this.idleTime = 0;
-    }
-
-    // tick up counter + if idle do idle anim
-    this.idleTime++;
-    if (this.idleTime === 2)
-      this.setAnim("idle");
+  changeWorld(world, spawnPos) {
+    this.trans.world = world;
+    this.trans.pos = G2P(spawnPos, Universe.getWorld(world).size[0]);
   }
 
   animTick() {
@@ -104,6 +85,37 @@ class Character {
       this.anim.iFrame = 0;
     }
   }
+
+  tick() {
+
+    // silly idles!!
+    if (this.idleTime >= 1000 && Math.random() > 0.998) {
+      this.setAnim("idle1", true, 1);
+      this.idleTime = 0;
+    }
+
+    // If idle then tick up counter and exit function
+    if (this.walkInfo.frame === 0) {
+      this.idleTime++;
+      if (this.walkInfo.endAnim) return;
+      this.walkInfo.endAnim = true;
+      this.setAnim("idle");
+      return;
+    }
+
+    // otherwise increase the walk frame + check to see if on a special tile
+    this.walkInfo.frame += 1;
+    const spd = this.sprinting ? this.sprintSpeed : this.walkSpeed;
+	  if (this.walkInfo.frame === spd) {
+	    this.walkInfo.frame = 0;
+		  this.walkInfo.prev = { ...this.trans.pos };
+      const worl = Universe.getWorld(this.trans.world);
+      const gp = P2G(this.trans.pos, worl.size[0]);
+      if (gp in worl.transition) {
+        this.changeWorld(...worl.transition[gp]);
+      }
+	  }
+  }
 }
 
 class PlayableCharacter extends Character {
@@ -112,7 +124,7 @@ class PlayableCharacter extends Character {
   }
 }
 
-const MainPlayer = new PlayableCharacter("colten", {x: 64, y: 64, r: 0});
+const MainPlayer = new PlayableCharacter("colten", {x: 2, y: 2, r: 0});
 MainPlayer.setAnim("idle");
 
 function WorldTick() {
@@ -120,29 +132,30 @@ function WorldTick() {
   MainPlayer.animTick();
   if (!inputDisabled)
     playerMovement();
-
-  Cam.x = (MainPlayer.trans.pos.x + GAME.bits / 2 - myCanvas.width / 2 / Cam.z);
-  Cam.y = (MainPlayer.trans.pos.y + GAME.bits / 2 - myCanvas.height / 2 / Cam.z);
-
+  Cam.x = (GAME.bits * (MainPlayer.trans.pos.x + 0.5) - myCanvas.width / 2 / Cam.z);
+  Cam.y = (GAME.bits * (MainPlayer.trans.pos.y + 0.5) - myCanvas.height / 2 / Cam.z);
+  if (MainPlayer.walkInfo.frame !== 0) { /* Account for player transition */
+    const spd = (MainPlayer.sprinting ? MainPlayer.sprintSpeed : MainPlayer.walkSpeed);
+    Cam.x -= (MainPlayer.trans.pos.x - MainPlayer.walkInfo.prev.x) / spd * (spd - MainPlayer.walkInfo.frame) * GAME.bits;
+    Cam.y -= (MainPlayer.trans.pos.y - MainPlayer.walkInfo.prev.y) / spd * (spd - MainPlayer.walkInfo.frame) * GAME.bits;
+  }
   Cam.x = Math.max(Math.min(Cam.x, (Universe.getWorld(MainPlayer.trans.world).size[0] * GAME.bits - myCanvas.width / Cam.z)), 0); // Clamp X
   Cam.y = Math.max(Math.min(Cam.y, (Universe.getWorld(MainPlayer.trans.world).size[1] * GAME.bits - myCanvas.height / Cam.z)), 0); // Clamp Y
-
   WorldDraw();
 }
 
 function playerMovement() {
-  const spd = MainPlayer.sprinting ? MainPlayer.sprintSpeed : MainPlayer.walkSpeed;
   if (Keys.KeyA) {
-  	MainPlayer.move({x: -spd, sprint: Keys.ShiftLeft});
+  	MainPlayer.move({x: -1, sprint: Keys.ShiftLeft});
   }
   if (Keys.KeyD) {
-	  MainPlayer.move({x: spd, sprint: Keys.ShiftLeft});
+	  MainPlayer.move({x: 1, sprint: Keys.ShiftLeft});
   }
   if (Keys.KeyW) {
-  	MainPlayer.move({y: -spd, sprint: Keys.ShiftLeft});
+  	MainPlayer.move({y: -1, sprint: Keys.ShiftLeft});
   }
   if (Keys.KeyS) {
-	  MainPlayer.move({y: spd, sprint: Keys.ShiftLeft});
+	  MainPlayer.move({y: 1, sprint: Keys.ShiftLeft});
   }
 }
 
@@ -180,9 +193,17 @@ function CharDraw(char) {
     return a + (b - a) * percent;
   }
 
-  const drawX = char.trans.pos.x;
-  const drawY = char.trans.pos.y;
+  var drawX = 0;
+  var drawY = 0;
 
+  if (char.walkInfo.frame === 0) {
+    drawX = char.trans.pos.x * px;
+    drawY = char.trans.pos.y * px;
+  } else {
+    const spd = char.sprinting ? char.sprintSpeed : char.walkSpeed;
+    drawX = ease(char.trans.pos.x, char.walkInfo.prev.x, char.walkInfo.frame / spd) * px
+    drawY = ease(char.trans.pos.y, char.walkInfo.prev.y, char.walkInfo.frame / spd) * px;  
+  }
   const charRef = Characters[char.name];
   if (char.anim.cur === "none") {
     const sheets = charRef.sheets;
