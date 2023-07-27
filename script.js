@@ -24,10 +24,10 @@ class Character {
   }
 
   collision(pos) {
-    const x1 = Math.floor(pos.x / GAME.bits);
-    const y1 = Math.floor(pos.y / GAME.bits);
-    const x2 = Math.floor(pos.x / GAME.bits) + 1;
-    const y2 = Math.floor(pos.y / GAME.bits) + 1;
+    const x1 = Math.floor(pos.x / GAME.bits + 0.1);
+    const y1 = Math.floor(pos.y / GAME.bits + 0.4);
+    const x2 = Math.floor(pos.x / GAME.bits - 0.1) + 1;
+    const y2 = Math.floor(pos.y / GAME.bits - 0.1) + 1;
 
     var colls = [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}, {x: x1, y: y2}];
     for (const pos of colls) {
