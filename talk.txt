@@ -1,0 +1,66 @@
+ok so for Cutscenes there needs to be a formats so it isn't hardcoded
+Also needs to take into account multiple choices
+
+
+right bar with a list of events
+drop down menu showing different scenes
+a create scene button
+delete scene button
+relocate button over each event which prompts the line to move it to
+use wasd to move camera position
+button to add/remove character (uses character library)
+when clicking on an event it opens a menu on the left side 
+the menu has info related to the event
+MOVECHAR:
+- needs char selected (dropdown)
+- two inputs for x & y + a button to click on position on map
+MOVECAM:
+- two inputs for x & y + a button which sets values to current camera
+- another input for zoom + a button which sets value to current zoom
+- camera movement time in seconds
+- possibly an easing time
+
+
+
+
+BATTLING CONTROLS
+
+wasd controls the cursor obv
+Space is select for cursor
+E opens/closes the attack list
+
+OR (BETTER)
+
+Move Phase:
+wasd move location
+Q & E to swap current character
+Space confirm move
+Attack Phase:
+Q & E swap current attack
+wasd move cursor
+Space confirm attack
+
+
+
+ANIMATIONS HOW THEY WORK
+
+so i need a stepAnim() for players
+and a setAnim(name, speed, loop) speed is a multiplier, the actual speed is set in bigg.
+{settings: {offset: {x: 0, y: 0}, frameSize: 64, width: 6}, walk: {speed: 2, start: 5, end: 15}}
+  speed: how many frames each image stays on screen
+  start: start frame
+  end: try and guess bruh
+  offset: offset if person making spritesheet is mentally unwell
+  frameSize: size of each frame in pixels
+  width: how many frames in a row
+
+
+
+
+
+Cutscene Creator:
+
+scene init has import character and set initial world
+dropdown menu to select character for deleting/init position
+canvas on the right for event list. Each event has up/down/delete/set position
+  Click on event for settings

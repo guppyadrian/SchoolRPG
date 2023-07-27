@@ -1,0 +1,37 @@
+<head>
+  <title>Cutscene</title>
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+
+
+<body>
+    <!-- Sidebar -->
+  <div class="w3-sidebar w3-light-grey w3-bar-block" style="width:15%">
+    <h3 class="w3-bar-item">Menu</h3>
+    <div class="dropdown">
+      <button class="w3-bar-item w3-button">SubScenes ▼</button>
+      <div class="dropdown-content" id="sheetDiv"> 
+      </div>
+    </div>
+    <br><h3 class="w3-bar-item">Add Character</h3>
+    <div class="w3-bar-item">
+      <input type="number" id="quantity" name="quantity" min="1" max="5"><input type="number" id="quantity" name="quantity" min="1" max="5"> <button onclick="setCharName()" class="w3-button">Set Name</button>
+    </div>
+    <button onclick="addChar()" class="w3-bar-item w3-button">Add Character</button>
+    <button onclick="delChar()" class="w3-bar-item w3-button">Delete Character</button>
+    <br><button onclick="setWorld()" class="w3-bar-item w3-button">Set World</button>
+    <br><h3 class="w3-bar-item">Anim Settings</h3>
+    <button onclick="setFrameTime()" class="w3-bar-item w3-button">Set Speed</button>
+    <div>
+      <button onclick="setStartFrame()" class="w3-bar-item w3-button">Start Frame</button>
+    </div>
+    <button onclick="setEndFrame()" class="w3-bar-item w3-button">End Frame</button>
+    <button onclick="setEZFrame()" class="w3-bar-item w3-button">EZ frame select</button>
+    <button onclick="exportAnim()" class="w3-bar-item w3-button" style="position: absolute; bottom: 0;"><b>Export</b></button>
+  </div>
+
+  <!-- Page Content -->
+  <div style="margin-left:15%">
+    <canvas id="myCanvas" width="960" height="540" style="border: 1px solid; position: absolute; top: 0;"></canvas>
+    <canvas id="rightBar" width="300" height="900" style="position: absolute; right: 0; border: 1px solid; top: 0;"></canvas>
+</body>

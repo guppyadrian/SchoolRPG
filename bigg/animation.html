@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<title>Animation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+<head>
+  <style>
+    .dropbtn {
+      background-color: #04AA6D;
+      color: white;
+      padding: 16px;
+      font-size: 16px;
+      border: none;
+    }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f1f1f1;
+      min-width: 160px;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1;
+    }
+
+    .dropdown-content a {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+    }
+
+    .dropdown-content a:hover {background-color: #ddd;}
+
+    .dropdown:hover .dropdown-content {display: block;}
+
+    .dropdown:hover .dropbtn {background-color: #3e8e41;}
+  </style>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="w3-sidebar w3-light-grey w3-bar-block" style="width:15%">
+  <h3 class="w3-bar-item">Menu</h3>
+  <button onclick="setCharName()" class="w3-bar-item w3-button">Set Character Name</button>
+  <br>
+  <div class="dropdown">
+    <button class="w3-bar-item w3-button">SpriteSheets ▼</button>
+    <div class="dropdown-content" id="sheetDiv"> 
+    </div>
+  </div>
+  <br><h3 class="w3-bar-item">Sheet Settings</h3>
+  <button onclick="setWidth()" class="w3-bar-item w3-button">Set Frames Per Row</button>
+  <button onclick="addAnimation()" class="w3-bar-item w3-button">Add Animation</button>
+  <div class="dropdown">
+    <button class="w3-bar-item w3-button">Animations ▼</button>
+    <div class="dropdown-content" id="animDiv"> 
+    </div>
+  </div>
+  <br><h3 class="w3-bar-item">Anim Settings</h3>
+  <button onclick="setFrameTime()" class="w3-bar-item w3-button">Set Speed</button>
+  <div>
+    <button onclick="setStartFrame()" class="w3-bar-item w3-button">Start Frame</button>
+  </div>
+  <button onclick="setEndFrame()" class="w3-bar-item w3-button">End Frame</button>
+  <button onclick="setEZFrame()" class="w3-bar-item w3-button">EZ frame select</button>
+  <button onclick="combineAnim()" class="w3-bar-item w3-button" style="position: absolute; bottom: 40px;"><b>Combine</b></button>
+  <button onclick="exportAnim()" class="w3-bar-item w3-button" style="position: absolute; bottom: 0;"><b>Export</b></button>
+</div>
+
+<!-- Page Content -->
+<div style="margin-left:15%">
+
+<!--
+  <div class="w3-container w3-teal">
+    <h1>My Page</h1>
+  </div>
+-->
+<input type="file" accept="image/*" name="image" id="file" onchange="loadFile(event)">hola</input>
+
+<canvas style="border: 1px solid;" id="myCanvas"></canvas>
+<canvas style="border: 1px solid;" id="sheetCanvas"></canvas>
+
+<div class="w3-container">
+<h3 hidden id="tutorial" style="border: 1px solid;">Process of making an animation</h3>
+<h2>Animation Editor <i>(Scuffed)</i></h2>
+<p>Upload a spritesheet lol</p>
+Checklist:
+<ul>
+  <li>Add a spritesheet</li>
+  <li>Set the spritesheet width</li>
+  <li>Add an animation</li>
+  <li>Set the start and end frame of the animation</li>
+  <li>Set the speed of the animation (bigger number is slower)</li>
+</ul>
+<p>
+  <b>HOW TO USE EZ FRAME SELECT</b>
+  <br>
+  <ul>
+    <li>Press EZ Frame Select</li>
+    <li>press the start frame of the animation in the spritesheet view</li>
+    <li>Press the end frame of the animation</li>
+    <li>all done!</li>
+
+  </ul>
+  
+</p>
+</div>
+
+</div>
+
+<script>
+  
+</script>
+<script src="./animation.js"></script>
+
+</body>
+</html>
