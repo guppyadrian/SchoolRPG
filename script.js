@@ -53,7 +53,7 @@ class Character {
     if (this.follower.char !== undefined) {
       this.follower.pos.push({...this.trans.pos, sprint});
       if (!this.follower.forcedFollow) { // If not rushing back to line leader then move follower
-        if (this.follower.pos.length > GAME.bits) this.follower.pos.shift();
+        if (this.follower.pos.length > (GAME.bits / 1.5)) this.follower.pos.shift();
         this.follower.char.moveTo({...this.follower.pos[0]});
       }
     }
@@ -91,7 +91,7 @@ class Character {
 
     if (this.follower.following === undefined) return;
     if (this.idleTime >= 60) {
-      if (Math.abs(this.follower.following.trans.pos.x - this.trans.pos.x) > GAME.bits || Math.abs(this.follower.following.trans.pos.y - this.trans.pos.y) > GAME.bits) {
+      if (Math.abs(this.follower.following.trans.pos.x - this.trans.pos.x) > (GAME.bits / 1.5) || Math.abs(this.follower.following.trans.pos.y - this.trans.pos.y) > (GAME.bits / 1.5)) {
         this.follower.forcedFollow = true;
         const prevIdleTime = this.idleTime;
         this.moveTo({...this.follower.following.follower.pos.shift()}); // what the hell is this
@@ -254,6 +254,10 @@ function CharDraw(char) {
   
 }
 
+function sortZChar(list) { // trans.pos.y  SMALLER Y DRAWN FIRST
+  return list.sort((a, b) => a.trans.pos.y - b.trans.pos.y);
+}
+
 function WorldDraw() {
   ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
   const px = GAME.bits;
@@ -261,7 +265,7 @@ function WorldDraw() {
   BGDraw(MainPlayer.trans.world);
   ctx.fillStyle = "red";
 
-  for (const plyr of PartyList) {
+  for (const plyr of sortZChar(PartyList)) {
     CharDraw(plyr);
   }
 
