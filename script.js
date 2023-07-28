@@ -10,8 +10,8 @@ function P2G(p, w) {
 
 var inputDisabled = false;
 
-/* Object containing data about the world and its levels */
 
+/* Character class */
 class Character {
   constructor(name, pos = {x: 0, y: 0, r: 0}, world = 1) {
     this.name = name;
@@ -21,11 +21,12 @@ class Character {
     this.sprinting = false;
     this.idleTime = 0;
     this.anim = {frame: 0, cur: "none", iFrame: 0, loop: -1};
+    this.follower = {pos: [], char: undefined, following: undefined, forcedFollow: false};
   }
 
   collision(pos) {
     const x1 = Math.floor(pos.x / GAME.bits + 0.1);
-    const y1 = Math.floor(pos.y / GAME.bits + 0.4);
+    const y1 = Math.floor(pos.y / GAME.bits + 0.6);
     const x2 = Math.floor(pos.x / GAME.bits - 0.1) + 1;
     const y2 = Math.floor(pos.y / GAME.bits - 0.1) + 1;
 
@@ -38,12 +39,24 @@ class Character {
     return false;
   }
 
+  moveTo({ x = 0, y = 0, sprint = false}) {
+    this.move({x: x - this.trans.pos.x, y: y - this.trans.pos.y, sprint: sprint});
+  }
+
   move({ x = 0, y = 0, sprint = false }) {
     if (this.collision({x: this.trans.pos.x + x, y: this.trans.pos.y + y})) {
       return false;
     }
     this.trans.pos.x += x;
     this.trans.pos.y += y;
+
+    if (this.follower.char !== undefined) {
+      this.follower.pos.push({...this.trans.pos, sprint});
+      if (!this.follower.forcedFollow) { // If not rushing back to line leader then move follower
+        if (this.follower.pos.length > GAME.bits) this.follower.pos.shift();
+        this.follower.char.moveTo({...this.follower.pos[0]});
+      }
+    }
 
     this.sprinting = sprint;
     if (sprint)
@@ -54,6 +67,11 @@ class Character {
     this.updateGrid();
   }
 
+  setFollower(char) {
+    this.follower.char = char;
+    char.follower.following = this;
+  }
+
   updateGrid() {
     this.trans.grid = {x: Math.floor(this.trans.pos.x / GAME.bits), y: Math.floor(this.trans.pos.y / GAME.bits)};
   }
@@ -61,7 +79,7 @@ class Character {
   tick() {
 
     // silly idles!!
-    if (this.idleTime >= 1000 && Math.random() > 0.998) {
+    if (this.idleTime >= 800 && Math.random() > 0.998) {
       this.setAnim("idle1", true, 1);
       this.idleTime = 3;
     }
@@ -70,6 +88,19 @@ class Character {
     this.idleTime++;
     if (this.idleTime === 2)
       this.setAnim("idle");
+
+    if (this.follower.following === undefined) return;
+    if (this.idleTime >= 60) {
+      if (Math.abs(this.follower.following.trans.pos.x - this.trans.pos.x) > GAME.bits || Math.abs(this.follower.following.trans.pos.y - this.trans.pos.y) > GAME.bits) {
+        this.follower.forcedFollow = true;
+        const prevIdleTime = this.idleTime;
+        this.moveTo({...this.follower.following.follower.pos.shift()}); // what the hell is this
+        this.idleTime = prevIdleTime + 1;
+      } else if (this.follower.forcedFollow) {
+        this.follower.forcedFollow = false;
+        this.setAnim("idle");
+      }
+    }
   }
 
   animTick() {
@@ -105,20 +136,35 @@ class Character {
   }
 }
 
+// Currently no difference between playable and normal
 class PlayableCharacter extends Character {
   constructor(name, pos, world) {
     super(name, pos, world);
   }
 }
 
+function addToParty(name) {
+  const char = PartyList[PartyList.length - 1];
+  const newChar = new Character(name, {...char.trans.pos}, char.trans.world);
+  PartyList.push(newChar);
+  char.setFollower(newChar);
+}
+
+const PartyList = [];
+
 const MainPlayer = new PlayableCharacter("colten", {x: 224, y: 224, r: 0}, 2);
-MainPlayer.setAnim("idle");
+PartyList.push(MainPlayer);
+for (let i = 0; i < 3; i++) // ¡Para la Colten fiesta!
+  addToParty("colten");
 
 function WorldTick() {
-  MainPlayer.tick();
-  MainPlayer.animTick();
+  fps.counter++;
+  for (const plyr of PartyList) {
+    plyr.tick();
+    plyr.animTick();
+  }
   if (!inputDisabled)
-    playerMovement();
+    playerMovement(MainPlayer);
 
   Cam.x = (MainPlayer.trans.pos.x + GAME.bits / 2 - myCanvas.width / 2 / Cam.z);
   Cam.y = (MainPlayer.trans.pos.y + GAME.bits / 2 - myCanvas.height / 2 / Cam.z);
@@ -129,19 +175,19 @@ function WorldTick() {
   WorldDraw();
 }
 
-function playerMovement() {
-  const spd = MainPlayer.sprinting ? MainPlayer.sprintSpeed : MainPlayer.walkSpeed;
+function playerMovement(plyr) {
+  const spd = plyr.sprinting ? plyr.sprintSpeed : plyr.walkSpeed;
   if (Keys.KeyA) {
-  	MainPlayer.move({x: -spd, sprint: Keys.ShiftLeft});
+  	plyr.move({x: -spd, sprint: Keys.ShiftLeft});
   }
   if (Keys.KeyD) {
-	  MainPlayer.move({x: spd, sprint: Keys.ShiftLeft});
+	  plyr.move({x: spd, sprint: Keys.ShiftLeft});
   }
   if (Keys.KeyW) {
-  	MainPlayer.move({y: -spd, sprint: Keys.ShiftLeft});
+  	plyr.move({y: -spd, sprint: Keys.ShiftLeft});
   }
   if (Keys.KeyS) {
-	  MainPlayer.move({y: spd, sprint: Keys.ShiftLeft});
+	  plyr.move({y: spd, sprint: Keys.ShiftLeft});
   }
 }
 
@@ -167,7 +213,6 @@ function BGDraw(worldID) {
     }
   } else { 
     const img = Universe.getWorld(worldID).bg;
-    console.log(worldID)
     imageDrawSmp(img, 0, 0, img.width, img.height);
   }
 }
@@ -216,14 +261,13 @@ function WorldDraw() {
   BGDraw(MainPlayer.trans.world);
   ctx.fillStyle = "red";
 
-  CharDraw(MainPlayer);
+  for (const plyr of PartyList) {
+    CharDraw(plyr);
+  }
 
-  var img = new Image();
-  img.src = 'greencursor.png';
-  ctx.shadowBlur = 25;
-  ctx.shadowColor = "green";
-  //ctx.drawImage(img, 200, 200, 128, 128);
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = "red";
+  ctx.font = "24px Arial";
+  ctx.fillText("fps: " + fps.average, 5, 24);
 }
 
 
