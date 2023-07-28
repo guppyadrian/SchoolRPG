@@ -274,5 +274,12 @@ function WorldDraw() {
   ctx.fillText("fps: " + fps.average, 5, 24);
 }
 
+function debugPlayAnim() {
+  const p = prompt("Animation name?");
+  if (p == undefined || p == "") return;
+  for (const char of PartyList) {
+    char.setAnim(p, true, -1);
+  }
+}
 
 setInterval(WorldTick, 16.67);

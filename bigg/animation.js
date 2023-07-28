@@ -10,7 +10,7 @@ var endFrame = 2;
 var usingEZ = false;
 var characterName = "guppy";
 
-const ctxBound = sheetCanvas.getBoundingClientRect();
+var ctxBound = sheetCanvas.getBoundingClientRect();
 
 
 const ctx = myCanvas.getContext('2d');
@@ -57,6 +57,7 @@ function combineAnim() {
   if (p === undefined || p === "" || p == null) return;
   p = p.replaceAll(/:toImage/g, ':"toImage');
   p = p.replaceAll(/\),/g, ')",');
+  console.log(p);
   var imp = JSON.parse(p);
 
   for (const i in sheetList) {
@@ -194,6 +195,7 @@ function tick() {
 
 sheetCanvas.addEventListener("mousedown", event => {
   if (usingEZ === false) return;
+  ctxBound = sheetCanvas.getBoundingClientRect();
   const posX = event.clientX - ctxBound.left;
   const posY = event.clientY - ctxBound.top;
   const sheet = sheetList[curSheet];
