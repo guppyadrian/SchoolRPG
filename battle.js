@@ -1,18 +1,18 @@
 const moveSet = {
-  punch: { atks: [{ dmg: 1, kb: { x: 1, y: 0 }, pos: { x: 0, y: 0 } }], range: "melee", name: "Punch!" },
+  punch: { atks: [{ dmg: 1, kb: { x: 1, y: 0 }, pos: { x: 0, y: 0 } }], range: "melee", name: "Punch!", id: "punch" },
   fartlol: { atks: [
     { dmg: 1, kb: { x: 1, y: 0 }, pos: { x: 1, y: 0 } },
     { dmg: 1, kb: { x: -1, y: 0 }, pos: { x: -1, y: 0 } },
     { dmg: 1, kb: { x: 0, y: 1 }, pos: { x: 0, y: 1 } },
     { dmg: 1, kb: { x: 0, y: -1 }, pos: { x: 0, y: -1 } }
-  ], range: "self", name: "FART ATTACK" }
+  ], range: "self", name: "FART ATTACK", id: "fartlol" }
 
 };
 
 var niceCameraEase = {x: 0, cur: 0, end: 0, cury: 0, endy: 0};
 
 function battleInit() {
-  Cam = {x: 0, y: 0, z: 1};
+  Cam = {x: 0, y: 50, z: 2};
 }
 
 class cursorClass{
@@ -149,6 +149,52 @@ class battleClass {
     return (map);
   }
 
+  getDamageAmount(origin, attack) {
+    var bestDamage = 0;
+    for (let r = 0; r < 4; r++) {
+      var damage = 0;
+      for (const atk of attack.atks) {
+        const rot = rotateCoord(atk.pos, r);
+        const pos = {x: origin.x + rot.x, y: origin.y + rot.y};
+        if (!this.inBound(pos)) continue;
+        if (typeof this.field[pos.x][pos.y] !== "object" || this.field[pos.x][pos.y].type !== "friend") continue;
+        damage += atk.dmg;
+      }
+      if (damage > bestDamage) bestDamage = damage;
+    }
+    return bestDamage;
+  }
+
+  /*  Generate attack path for an attack at every position reachable  */
+  generateAttackSpots(origin, range, attacks) {
+    var map = Array(this.cols).fill(0).map(x => Array(this.rows).fill(0));
+    const moveMap = this.generateWalkPath(origin, range);
+
+    /* Loop through movement map and find available spots to move to */
+    for (let x = 0; x < map.length; x++) {
+      for (let y = 0; y < map.length; y++) {
+        if (typeof moveMap[x][y] !== 'object') continue;
+        for (const atk of attacks) {
+
+          /* Get attack map for the spot and see if a player is on it */
+          var attackMap = this.generateAttackPath({x: x, y: y}, atk.range);
+          for (let ax = 0; ax < attackMap.length; ax++) {
+            for (let ay = 0; ay < attackMap[ax].length; ay++) {
+              
+              if (typeof attackMap[ax][ay] !== "object") continue;
+              const dmg = this.getDamageAmount({x: ax, y: ay}, atk);
+              if (dmg === 0) continue;
+              if (map[ax][ay] === 0 || dmg > map[ax][ay].dmg) {
+                map[ax][ay] = {dmg: dmg, atk: atk.id, move: {x: x, y: y}, dir: attackMap[ax][ay].dir};
+              }
+            }
+          }
+        }
+      }
+    }
+    return map;
+  }
+
   generateAttackPath(origin, range) {
     var map = Array(this.cols).fill(0).map(x => Array(this.rows).fill(0));
     for (const x in map) {
@@ -158,12 +204,16 @@ class battleClass {
       }
     }
 
+    function atkObj(dmg = 1, dir = 0) {
+      return {dir: dir, dmg: dmg};
+    }
+
     switch(range) {
       case 'melee':
         for (let i = 0; i < 4; i++) {
           const rang = addPos(rotateCoord(undefined, i), origin);
           if (!this.inBound(rang)) continue;
-          map[rang.x][rang.y] = {dir: i}; 
+          map[rang.x][rang.y] = atkObj(1, i); 
         }
         break;
 
@@ -253,7 +303,7 @@ class unit {
   }
 }
 
-class friend extends unit {
+class Friend extends unit {
   constructor(name, battle, pos) {
     super(name, battle, pos);
     this.moved = false;
@@ -272,6 +322,28 @@ class friend extends unit {
   }
 }
 
+class Enemy extends unit {
+  constructor(name, battle, pos) {
+    super(name, battle, pos);
+    this.type = "enemy";
+  }
+
+  executeAI() {
+    const atkSpots = this.battle.generateAttackSpots(this.pos, 3, this.moves);
+    var bestAttack = 0;
+    for (let x = 0; x < atkSpots.length; x++) {
+      for (let y = 0; y < atkSpots[x].length; y++) {
+        const spot = atkSpots[x][y];
+        if (spot === 0) continue;
+        if (bestAttack === 0 || spot.dmg > bestAttack.dmg) {
+          bestAttack = {...spot, tarPos: {x: x, y: y}};
+        }
+      }
+    }
+    return {atk: [moveSet[bestAttack.atk], bestAttack.tarPos, bestAttack.dir], move: bestAttack.move};
+  }
+}
+
 function createUnit(name, battle, pos = { x: 0, y: 1 }) {
   const plyr = new unit(name, battle, pos);
   battle.field[pos.x][pos.y] = plyr;
@@ -280,7 +352,14 @@ function createUnit(name, battle, pos = { x: 0, y: 1 }) {
 }
 
 function createFriend(name, battle, pos = { x: 0, y: 1}) {
-  const plyr = new friend(name, battle, pos);
+  const plyr = new Friend(name, battle, pos);
+  battle.field[pos.x][pos.y] = plyr;
+  battle.units.push(plyr);
+  return plyr;
+}
+
+function createEnemy(name, battle, pos = { x: 0, y: 1}) {
+  const plyr = new Enemy(name, battle, pos);
   battle.field[pos.x][pos.y] = plyr;
   battle.units.push(plyr);
   return plyr;
@@ -289,16 +368,16 @@ function createFriend(name, battle, pos = { x: 0, y: 1}) {
 const BATTLE = new battleClass(5, 9);
 const PLAYER = createFriend("gup", BATTLE, {x: 2, y: 2});
 const PLAYER2 = createFriend("bup", BATTLE, {x: 2, y: 1})
-const ENEMY = createUnit("gus", BATTLE, { x: 1, y: 2 });
+const ENEMY = createEnemy("gus", BATTLE, { x: 4, y: 2 });
 var Cursor = new cursorClass(BATTLE);
 
 function battleTick() {
-  if (Keys.a) { Cursor.pos.x -= 1; Keys.a = false; }
-  if (Keys.d) { Cursor.pos.x += 1; Keys.d = false; }
-  if (Keys.w) { Cursor.pos.y -= 1; Keys.w = false; }
-  if (Keys.s) { Cursor.pos.y += 1; Keys.s = false; }
-  if (Keys[" "]) { Cursor.select(); Keys[" "] = false; }
-  if (Keys.e) {
+  if (Keys.KeyA) { Cursor.pos.x -= 1; Keys.KeyA = false; }
+  if (Keys.KeyD) { Cursor.pos.x += 1; Keys.KeyD = false; }
+  if (Keys.KeyW) { Cursor.pos.y -= 1; Keys.KeyW = false; }
+  if (Keys.KeyS) { Cursor.pos.y += 1; Keys.KeyS = false; }
+  if (Keys.Space) { Cursor.select(); Keys.Space = false; }
+  if (Keys.KeyE) {
     if (Cursor.phase === 1)
       Cursor.findUnused();
     else {
@@ -307,17 +386,19 @@ function battleTick() {
       Cursor.selectOptions = BATTLE.generateAttackPath(Cursor.selPos, plyr.moves[Cursor.curAtkID].range);
       console.log(Cursor.curAtkID);
     }
-    Keys.e = false;
+    Keys.KeyE = false;
   }
 
   function sinEase(x) {
     return -(Math.cos(Math.PI * x) - 1) / 2;
   }
 
-  Cam3.x = sinEase(niceCameraEase.x) * 20 - 10;
-  niceCameraEase.x += 0.006;
+  Cam3.x = sinEase(niceCameraEase.x) * 16 - 8;
+  niceCameraEase.x += 0.003;
   if (niceCameraEase >= 2)
     niceCameraEase.x = 0;
+
+  /*  CODE FOR TURNING CAMERA. Not enabled cause it will mess with textures
   niceCameraEase.end = -(Cursor.pos.x - Math.floor(BATTLE.cols / 2)) / 200;
   niceCameraEase.cur += (niceCameraEase.end - niceCameraEase.cur) / 5;
   cosY = Math.cos(niceCameraEase.cur * Math.PI * 2);
@@ -327,6 +408,7 @@ function battleTick() {
   niceCameraEase.cury += (niceCameraEase.endy - niceCameraEase.cury) / 5;
   cosX = Math.cos(niceCameraEase.cury * Math.PI * 2);
   sinX = Math.sin(niceCameraEase.cury * Math.PI * 2);
+  */
 
   battleDraw2(BATTLE);
 }
@@ -420,7 +502,7 @@ function battleDraw2(battle) {
     const cursorTar = Cursor.selectOptions[Cursor.pos.x][Cursor.pos.y];
     if (typeof cursorTar === "object") {
       ctx.globalAlpha = 1;
-      mapPath(cursorTar.retrace); /* Rewrite this crap bruh */
+      mapPath3d(cursorTar.retrace, battle); /* Rewrite this crap bruh */
     }
   } else if (Cursor.phase === 2) { /* Draw for attack phase */
     ctx.fillStyle = "blue";
@@ -471,6 +553,21 @@ function mapPath(dest) {
   ctx.moveTo(dest[0].x * 64 + 32, dest[0].y * 64 + 32);
   for (let i = 1; i < dest.length; i++) {
     ctx.lineTo(dest[i].x * 64 + 32, dest[i].y * 64 + 32);
+  }
+  ctx.lineWidth = 8;
+  ctx.stroke();
+}
+
+function mapPath3d(dest, battle) {
+  const dest3d = [];
+  for (let i = 0; i < dest.length; i++) {
+    dest3d.push(centerPos(camPos(project2d([(dest[i].x - battle.cols / 2) * 64 + 32, dest[i].y * 64 + 32]))));
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(...dest3d[0]);
+  for (let i = 1; i < dest3d.length; i++) {
+    ctx.lineTo(...dest3d[i]);
   }
   ctx.lineWidth = 8;
   ctx.stroke();
@@ -530,3 +627,10 @@ Cursor.findUnused();
 battleInit();
 setInterval(battleTick, 16.67);
 //*/
+
+
+
+/*
+so the enemy gets its attacks, function to turn all attacks into a map, with higher damages overriding old ones. Make walk map. Get overlaps and pick the higher damage one.
+
+*/

@@ -93,3 +93,16 @@ Universe.worlds[1].coll = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+Universe.worlds[3] = {};
+Universe.worlds[3].size = [6, 8];
+Universe.worlds[3].bg = toImage(`./assets/maps/coltenRoom.png`);
+Universe.worlds[3].coll = [0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1,
+  1, 0, 0, 0, 0, 1,
+  0, 0, 0, 0, 0, 1,
+  1, 0, 0, 0, 0, 1,
+  1, 0, 0, 0, 0, 1,
+  1, 0, 0, 0, 0, 1,
+  1, 1, 1, 1, 1, 1];
+Universe.worlds[3].transition = {18: {pos: {x: 0, y: 0}}}

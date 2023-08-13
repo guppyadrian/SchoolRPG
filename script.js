@@ -1,3 +1,4 @@
+"use strict";
 /* Converts from a grid integer to an xy position object */
 function G2P(g, w) {
   return { x: g % w, y: Math.floor(g / w) };
@@ -25,10 +26,10 @@ class Character {
   }
 
   collision(pos) {
-    const x1 = Math.floor(pos.x / GAME.bits + 0.1);
+    const x1 = Math.floor(pos.x / GAME.bits + 0.2);
     const y1 = Math.floor(pos.y / GAME.bits + 0.6);
-    const x2 = Math.floor(pos.x / GAME.bits - 0.1) + 1;
-    const y2 = Math.floor(pos.y / GAME.bits - 0.1) + 1;
+    const x2 = Math.floor(pos.x / GAME.bits - 0.3) + 1;
+    const y2 = Math.floor(pos.y / GAME.bits - 0.2) + 1;
 
     var colls = [{x: x1, y: y1}, {x: x2, y: y1}, {x: x2, y: y2}, {x: x1, y: y2}];
     for (const pos of colls) {
@@ -59,10 +60,16 @@ class Character {
     }
 
     this.sprinting = sprint;
-    if (sprint)
-      this.setAnim("runD", false);
-    else
-      this.setAnim("walkD", false);
+    const animPrefix = sprint ? "run" : "walk";
+    if (y > 0) {
+      this.setAnim(animPrefix + "D", false);
+    } else if (y < 0) {
+      this.setAnim(animPrefix + "D", false);
+    } else if (x > 0) {
+      this.setAnim(animPrefix + "R", false);
+    } else if (x < 0) {
+      this.setAnim(animPrefix + "L", false);
+    }
     this.idleTime = 0;
     this.updateGrid();
   }
@@ -152,7 +159,7 @@ function addToParty(name) {
 
 const PartyList = [];
 
-const MainPlayer = new PlayableCharacter("colten", {x: 224, y: 224, r: 0}, 2);
+const MainPlayer = new PlayableCharacter("colten", {x: 96, y: 96, r: 0}, 3);
 PartyList.push(MainPlayer);
 for (let i = 0; i < 3; i++) // ¡Para la Colten fiesta!
   addToParty("colten");
@@ -169,8 +176,23 @@ function WorldTick() {
   Cam.x = (MainPlayer.trans.pos.x + GAME.bits / 2 - myCanvas.width / 2 / Cam.z);
   Cam.y = (MainPlayer.trans.pos.y + GAME.bits / 2 - myCanvas.height / 2 / Cam.z);
 
-  Cam.x = Math.max(Math.min(Cam.x, (Universe.getWorld(MainPlayer.trans.world).size[0] * GAME.bits - myCanvas.width / Cam.z)), 0); // Clamp X
-  Cam.y = Math.max(Math.min(Cam.y, (Universe.getWorld(MainPlayer.trans.world).size[1] * GAME.bits - myCanvas.height / Cam.z)), 0); // Clamp Y
+  const worldWidth = Universe.getWorld(MainPlayer.trans.world).size[0] * GAME.bits
+  const worldHeight = Universe.getWorld(MainPlayer.trans.world).size[1] * GAME.bits
+
+  // Clamp X
+  if (myCanvas.width < worldWidth * Cam.z) {
+    Cam.x = Math.max(Math.min(Cam.x, (worldWidth - myCanvas.width / Cam.z)), 0);
+  } else {
+    Cam.x = ((worldWidth * Cam.z - myCanvas.width) / 2) / Cam.z
+  }
+
+  // Clamp Y
+  if (myCanvas.height < worldHeight * Cam.z) {
+    Cam.y = Math.max(Math.min(Cam.y, (worldHeight - myCanvas.height / Cam.z)), 0);
+  } else {
+    Cam.y = ((worldHeight * Cam.z - myCanvas.height) / 2) / Cam.z
+  }
+  
 
   WorldDraw();
 }
